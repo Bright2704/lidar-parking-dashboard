@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LAYOUTS, cloneLayout } from "@/lib/layouts";
 import { Lane, Obstacle, ParkEvent, Sensor, Spot } from "@/lib/types";
+import { useSideView, SideViewCanvas, SideViewPanel } from "./SideView";
 
 // ---------- palette ----------
 const GREEN = "#22c55e";
@@ -394,6 +395,17 @@ export default function Dashboard() {
   const [showLabels, setShowLabels] = useState(false);
   const [carOcclusion, setCarOcclusion] = useState(true);
   const [tab, setTab] = useState<Tab>("overview");
+  const [view, setView] = useState<"top" | "side">("top");
+  const sideModel = useSideView({
+    spots,
+    sensors,
+    obstacles,
+    selectedSensorId,
+    layoutW: layout.width,
+    layoutH: layout.height,
+    onToggleSpot: (id, occ) =>
+      setSpots((prev) => prev.map((sp) => (sp.id === id ? { ...sp, occupied: occ } : sp))),
+  });
 
   const [entered, setEntered] = useState(0);
   const [exited, setExited] = useState(0);
@@ -913,6 +925,12 @@ export default function Dashboard() {
           >
             ↺ รีเซ็ต
           </button>
+          <a
+            href="/logic"
+            className="text-xs px-3 py-1.5 rounded-md bg-sky-500/15 border border-sky-400/40 text-sky-200 hover:bg-sky-500/25 font-semibold"
+          >
+            📋 Logic & ขีดจำกัด
+          </a>
         </div>
       </header>
 
@@ -920,11 +938,29 @@ export default function Dashboard() {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-0">
         {/* ----- CANVAS COLUMN ----- */}
         <section className="relative p-3">
-          <div className="text-xs text-slate-400 mb-2 px-1">
-            {layout.description}
+          <div className="flex items-center gap-3 mb-2 px-1">
+            <div className="text-xs text-slate-400 flex-1">{layout.description}</div>
+            <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs shrink-0">
+              <button
+                onClick={() => setView("top")}
+                className={`px-3 py-1 font-semibold ${
+                  view === "top" ? "bg-sky-500 text-white" : "bg-[#13243c] text-slate-300 hover:bg-[#1a2f4d]"
+                }`}
+              >
+                Top View
+              </button>
+              <button
+                onClick={() => setView("side")}
+                className={`px-3 py-1 font-semibold ${
+                  view === "side" ? "bg-sky-500 text-white" : "bg-[#13243c] text-slate-300 hover:bg-[#1a2f4d]"
+                }`}
+              >
+                Side View
+              </button>
+            </div>
           </div>
 
-          <div className="relative rounded-xl border border-white/10 bg-[#0a1322] overflow-hidden">
+          <div className={`relative rounded-xl border border-white/10 bg-[#0a1322] overflow-hidden ${view === "side" ? "hidden" : ""}`}>
             {/* floating toolbar */}
             <div className="absolute z-10 top-3 left-3 flex flex-col gap-1.5 bg-[#0d1726]/90 backdrop-blur p-1.5 rounded-lg border border-white/10">
               <ToolBtn
@@ -1368,10 +1404,20 @@ export default function Dashboard() {
               </span>
             </div>
           </div>
+
+          {view === "side" && (
+            <div className="relative rounded-xl border border-white/10 bg-[#0a1322] overflow-hidden">
+              <SideViewCanvas model={sideModel} />
+            </div>
+          )}
         </section>
 
         {/* ----- RIGHT PANEL ----- */}
         <aside className="border-l border-white/10 bg-[#0d1726] flex flex-col max-h-[calc(100vh-58px)]">
+          {view === "side" ? (
+            <SideViewPanel model={sideModel} />
+          ) : (
+          <>
           <div className="flex border-b border-white/10 text-xs">
             {([
               ["overview", "ภาพรวม"],
@@ -1420,6 +1466,8 @@ export default function Dashboard() {
             )}
             {tab === "events" && <EventsTab events={events} mounted={mounted} />}
           </div>
+          </>
+          )}
         </aside>
       </div>
     </div>
