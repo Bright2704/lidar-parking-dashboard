@@ -232,7 +232,7 @@ export function useSideView(opts?: {
     };
     return {
       dir, perp, corridorHalfPx,
-      origin: { x: origin.x, y: origin.y },
+      origin: { x: origin.x, y: origin.y, radius: origin.radius },
       spots: spots.map((s) => ({ id: s.id, x: s.x + s.w / 2, y: s.y + s.h / 2, occ: s.occupied, in: inSlice(s.x + s.w / 2, s.y + s.h / 2) })),
       obstacles: obstacles.map((o) => ({ x: o.x + o.w / 2, y: o.y + o.h / 2, in: inSlice(o.x + o.w / 2, o.y + o.h / 2) })),
     };
@@ -458,6 +458,50 @@ const M_R = 24;
 const M_T = 18;
 const GROUND_Y = 320;
 
+// ---- inset top-view: รัศมีครอบคลุมของ LiDAR (วางมุมบนซ้ายของ side view) ----
+function CoverageInset({ m }: { m: SideModel }) {
+  if (!m.minimap) return null;
+  const o = m.minimap.origin;
+  const R = o.radius;
+  const pad = R * 0.18 + 12;
+  const vb = `${o.x - R - pad} ${o.y - R - pad} ${2 * (R + pad)} ${2 * (R + pad)}`;
+  const len = R + pad;
+  const far = { x: o.x + m.minimap.dir.x * len, y: o.y + m.minimap.dir.y * len };
+  const ch = m.minimap.corridorHalfPx;
+  const w1 = { x: o.x + m.minimap.perp.x * ch + m.minimap.dir.x * len, y: o.y + m.minimap.perp.y * ch + m.minimap.dir.y * len };
+  const w2 = { x: o.x - m.minimap.perp.x * ch + m.minimap.dir.x * len, y: o.y - m.minimap.perp.y * ch + m.minimap.dir.y * len };
+  // ระยะที่ "เห็นจริง" บนพื้น (จำกัดด้วยความสูง/มุม) — วงในจางบอกขอบเขตเชิงเรขาคณิต
+  const farM = isFinite(m.sim.farGround) ? m.sim.farGround : m.range;
+  const effR = Math.min(R, farM / m.metersPerPx);
+  return (
+    <div className="absolute top-2 left-2 z-10 rounded-lg border border-white/15 bg-[#0d1726]/90 backdrop-blur p-1.5" style={{ width: 150 }}>
+      <div className="text-[9px] text-slate-300 mb-0.5 px-0.5 flex items-center justify-between">
+        <span>มุมมองบน · รัศมี</span><span className="font-mono text-sky-300">{(R * m.metersPerPx).toFixed(0)}m</span>
+      </div>
+      <svg viewBox={vb} width="100%" style={{ aspectRatio: "1 / 1", display: "block" }}>
+        {/* รัศมีครอบคลุม (จาง) */}
+        <circle cx={o.x} cy={o.y} r={R} fill="rgba(56,189,248,0.10)" stroke="#38bdf8" strokeOpacity={0.5} strokeWidth={R * 0.012} strokeDasharray={`${R * 0.04} ${R * 0.03}`} />
+        {/* ขอบเขตที่เห็นจริงตามความสูง/มุม */}
+        <circle cx={o.x} cy={o.y} r={effR} fill="rgba(34,197,94,0.10)" stroke="#22c55e" strokeOpacity={0.6} strokeWidth={R * 0.012} />
+        {/* แนวตัด azimuth */}
+        <polygon points={`${o.x},${o.y} ${w1.x},${w1.y} ${w2.x},${w2.y}`} fill="rgba(253,224,71,0.12)" />
+        <line x1={o.x} y1={o.y} x2={far.x} y2={far.y} stroke="#fde68a" strokeWidth={R * 0.016} strokeDasharray={`${R * 0.05} ${R * 0.035}`} />
+        {/* ช่องจอด */}
+        {m.minimap.spots.map((sp) => (
+          <circle key={sp.id} cx={sp.x} cy={sp.y} r={R * 0.03 + 2} fill={sp.in ? (sp.occ ? "#ef4444" : "#22c55e") : "#1e2f49"} stroke={sp.in ? "#fff" : "#33507d"} strokeWidth={sp.in ? R * 0.01 : 0} />
+        ))}
+        {/* เสา/ต้นไม้ */}
+        {m.minimap.obstacles.map((ob, i) => (<rect key={i} x={ob.x - R * 0.025} y={ob.y - R * 0.025} width={R * 0.05} height={R * 0.05} fill={ob.in ? "#f59e0b" : "#3f3a2a"} />))}
+        {/* sensor */}
+        <circle cx={o.x} cy={o.y} r={R * 0.04 + 3} fill="#0ea5e9" stroke="#bae6fd" strokeWidth={R * 0.014} />
+      </svg>
+      <div className="text-[8px] text-slate-400 mt-0.5 px-0.5 leading-tight">
+        <span className="text-sky-300">━━</span> รัศมีรุ่น · <span className="text-emerald-300">━━</span> เห็นจริง {(effR * m.metersPerPx).toFixed(0)}m
+      </div>
+    </div>
+  );
+}
+
 export function SideViewCanvas({ model: m }: { model: SideModel }) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragRef = useRef<null | "height" | "tilt">(null);
@@ -509,6 +553,8 @@ export function SideViewCanvas({ model: m }: { model: SideModel }) {
 
   return (
     <div>
+      <div className="relative">
+      {m.minimap && <CoverageInset m={m} />}
       <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full block touch-none select-none" style={{ maxHeight: "60vh" }} onPointerMove={onMove} onPointerUp={endDrag} onPointerLeave={endDrag}>
         <defs>
           <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0e1c30" /><stop offset="100%" stopColor={SKY} /></linearGradient>
@@ -589,6 +635,7 @@ export function SideViewCanvas({ model: m }: { model: SideModel }) {
         {isFinite(m.sim.nearGround) && m.sim.nearGround < Xmax && (<g><line x1={sx(m.sim.nearGround)} y1={GROUND_Y} x2={sx(m.sim.nearGround)} y2={GROUND_Y - 16} stroke={BEAM} strokeWidth={1} /><text x={sx(m.sim.nearGround)} y={GROUND_Y - 20} textAnchor="middle" fontSize={9} fill="#7dd3fc">ใกล้สุด {m.sim.nearGround.toFixed(1)}m</text></g>)}
         {isFinite(m.sim.farGround) && m.sim.farGround < Xmax && (<g><line x1={sx(m.sim.farGround)} y1={GROUND_Y} x2={sx(m.sim.farGround)} y2={GROUND_Y - 16} stroke={BEAM} strokeWidth={1} /><text x={sx(m.sim.farGround)} y={GROUND_Y - 20} textAnchor="middle" fontSize={9} fill="#7dd3fc">ไกลสุด {m.sim.farGround.toFixed(1)}m</text></g>)}
       </svg>
+      </div>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-[11px] text-slate-300 border-t border-white/10 bg-[#0d1726]">
         <span className="inline-flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm" style={{ background: "rgba(56,189,248,0.4)" }} /> ลำแสง</span>

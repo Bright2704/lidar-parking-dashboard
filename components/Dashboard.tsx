@@ -112,7 +112,8 @@ function sensorSees(
   spot: Spot,
   se: Sensor,
   obstacles: Obstacle[],
-  cars: Car[]
+  cars: Car[],
+  reach: number = SHADOW_REACH
 ): boolean {
   const { cx, cy } = spotCenter(spot);
   const dSpot = Math.hypot(cx - se.x, cy - se.y);
@@ -125,19 +126,66 @@ function sensorSees(
       // than that is seen again (the overhead beam has cleared the car roof) — so
       // occlusion bites at far/shallow angles, not for spots right under the sensor.
       const dCar = Math.hypot(c.x + c.w / 2 - se.x, c.y + c.h / 2 - se.y);
-      if (dSpot <= dCar * SHADOW_REACH) return false;
+      if (dSpot <= dCar * reach) return false;
     }
   }
   return true;
+}
+
+// ----- สัดส่วนพื้นที่ของช่องจอดที่ LiDAR "มองเห็นจริง" (สุ่มจุดทั่วช่อง 3x3) -----
+// LiDAR ต้องเห็นพื้นที่ช่องมากพอ (เกินเกณฑ์ %) ถึงจะมีจุดมากพอจะบอกได้ว่าว่าง/มีรถ
+function spotSeenFraction(
+  spot: Spot,
+  se: Sensor,
+  obstacles: Obstacle[],
+  cars: Car[],
+  reach: number
+): number {
+  const NX = 3;
+  const NY = 3;
+  let vis = 0;
+  for (let i = 0; i < NX; i++) {
+    for (let j = 0; j < NY; j++) {
+      const px = spot.x + (spot.w * (i + 0.5)) / NX;
+      const py = spot.y + (spot.h * (j + 0.5)) / NY;
+      const d = Math.hypot(px - se.x, py - se.y);
+      if (d > se.radius) continue;
+      if (blocked(se.x, se.y, px, py, obstacles)) continue;
+      let carBlocked = false;
+      for (const c of cars) {
+        if (c.id === spot.id) continue;
+        if (segHitsRect(se.x, se.y, px, py, c.x, c.y, c.w, c.h)) {
+          const dCar = Math.hypot(c.x + c.w / 2 - se.x, c.y + c.h / 2 - se.y);
+          if (d <= dCar * reach) { carBlocked = true; break; }
+        }
+      }
+      if (!carBlocked) vis++;
+    }
+  }
+  return vis / (NX * NY);
+}
+
+function spotVisibility(
+  spot: Spot,
+  sensors: Sensor[],
+  obstacles: Obstacle[],
+  cars: Car[],
+  reach: number
+): number {
+  let best = 0;
+  for (const se of sensors) best = Math.max(best, spotSeenFraction(spot, se, obstacles, cars, reach));
+  return best;
 }
 
 function isCovered(
   spot: Spot,
   sensors: Sensor[],
   obstacles: Obstacle[],
-  cars: Car[]
+  cars: Car[],
+  reach: number = SHADOW_REACH,
+  minFrac: number = 0.4
 ): boolean {
-  return sensors.some((se) => sensorSees(spot, se, obstacles, cars));
+  return spotVisibility(spot, sensors, obstacles, cars, reach) >= minFrac;
 }
 
 // ----- "flashlight" shadows: each obstacle casts a solid umbra quad away from the sensor.
@@ -406,6 +454,20 @@ export default function Dashboard() {
     onToggleSpot: (id, occ) =>
       setSpots((prev) => prev.map((sp) => (sp.id === id ? { ...sp, occupied: occ } : sp))),
   });
+
+  // ----- ความสูง LiDAR เชื่อมกับ side view: ยิ่งติดต่ำ เงาหลังรถยิ่งยาว เห็นน้อยลง -----
+  // เงา = ระยะ × H/(H - h_รถ). ติดต่ำกว่าความสูงรถ (~1.5m) → เงาแทบอนันต์ เห็นแค่คันหน้า
+  const H_CAR = 1.5;
+  const shadowReach =
+    sideModel.height <= H_CAR + 0.15 ? 60 : sideModel.height / (sideModel.height - H_CAR);
+  const shadowReachRef = useRef(shadowReach);
+  shadowReachRef.current = shadowReach;
+
+  // เกณฑ์ %: ต้องเห็นพื้นที่ช่องอย่างน้อยเท่านี้ ระบบถึงจะอ่านสถานะได้ (ไม่งั้น = จุดบอด)
+  const [readPct, setReadPct] = useState(40);
+  const readFrac = readPct / 100;
+  const readFracRef = useRef(readFrac);
+  readFracRef.current = readFrac;
 
   const [entered, setEntered] = useState(0);
   const [exited, setExited] = useState(0);
@@ -732,10 +794,10 @@ export default function Dashboard() {
     const obs = obstaclesRef.current;
     const cs = carsFrom(sp, carOcclusionRef.current);
     const vac = sp.filter(
-      (s) => isCovered(s, se, obs, cs) && !s.occupied && !reservedRef.current.has(s.id)
+      (s) => isCovered(s, se, obs, cs, shadowReachRef.current, readFracRef.current) && !s.occupied && !reservedRef.current.has(s.id)
     );
     if (vac.length === 0) {
-      const anyDetected = sp.some((s) => isCovered(s, se, obs, cs));
+      const anyDetected = sp.some((s) => isCovered(s, se, obs, cs, shadowReachRef.current, readFracRef.current));
       showBanner(
         anyDetected ? "ลานเต็ม — ไม่มีช่องว่างในพื้นที่ตรวจจับ" : "ยังไม่มีพื้นที่ตรวจจับ — วาง/ลาก LiDAR ก่อน",
         "full"
@@ -752,7 +814,7 @@ export default function Dashboard() {
     const obs = obstaclesRef.current;
     const cs = carsFrom(sp, carOcclusionRef.current);
     const occ = sp.filter(
-      (s) => isCovered(s, se, obs, cs) && s.occupied && !reservedRef.current.has(s.id)
+      (s) => isCovered(s, se, obs, cs, shadowReachRef.current, readFracRef.current) && s.occupied && !reservedRef.current.has(s.id)
     );
     if (occ.length === 0) {
       showBanner("ไม่มีรถในพื้นที่ตรวจจับให้ออก", "empty");
@@ -815,7 +877,7 @@ export default function Dashboard() {
   // ---------- derived stats ----------
   const stats = useMemo(() => {
     const total = spots.length;
-    const detected = spots.filter((s) => isCovered(s, sensors, obstacles, cars));
+    const detected = spots.filter((s) => isCovered(s, sensors, obstacles, cars, shadowReach, readFrac));
     const detectedCount = detected.length;
     const detOcc = detected.filter((s) => s.occupied).length;
     const detVac = detectedCount - detOcc;
@@ -841,7 +903,7 @@ export default function Dashboard() {
       turnoverPerHr,
       avgDwell,
     };
-  }, [spots, sensors, exited, dwell, obstacles, cars]);
+  }, [spots, sensors, exited, dwell, obstacles, cars, shadowReach, readFrac]);
 
   // "flashlight" beams: each sensor = a lit disc minus solid shadow umbras (SVG mask).
   // Both static obstacles AND parked cars cast shadows.
@@ -857,19 +919,19 @@ export default function Dashboard() {
           ...cars.map((c) => {
             const dCar = Math.hypot(c.x + c.w / 2 - se.x, c.y + c.h / 2 - se.y);
             // limited shadow: only reaches ~1.5× the car's distance (distance-dependent)
-            return shadowQuad(se, c as unknown as Obstacle, dCar * SHADOW_REACH);
+            return shadowQuad(se, c as unknown as Obstacle, dCar * shadowReach);
           }),
         ].filter((s): s is string => s !== null),
       })),
-    [sensors, obstacles, cars]
+    [sensors, obstacles, cars, shadowReach]
   );
 
   const selectedSensor = sensors.find((s) => s.id === selectedSensorId) || null;
   const selectedSensorSpotCount = useMemo(() => {
     if (!selectedSensor) return 0;
-    return spots.filter((s) => sensorSees(s, selectedSensor, obstacles, cars))
+    return spots.filter((s) => sensorSees(s, selectedSensor, obstacles, cars, shadowReach))
       .length;
-  }, [selectedSensor, spots, obstacles, cars]);
+  }, [selectedSensor, spots, obstacles, cars, shadowReach]);
 
   // ============================================================
   return (
@@ -903,6 +965,48 @@ export default function Dashboard() {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* ความสูง LiDAR — เชื่อมกับ side view (ยิ่งต่ำ ยิ่งโดนบัง เห็นน้อย) */}
+        <div className="flex items-center gap-2">
+          <label className="text-[11px] text-slate-400">ความสูง LiDAR</label>
+          <input
+            type="range"
+            min={1.5}
+            max={9}
+            step={0.1}
+            value={sideModel.height}
+            onChange={(e) => sideModel.setHeight(parseFloat(e.target.value))}
+            className="w-28 accent-sky-400 h-1.5"
+          />
+          <span className="text-[11px] font-mono text-sky-300 w-10">{sideModel.height.toFixed(1)}m</span>
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded ${
+              sideModel.height <= H_CAR + 0.15
+                ? "bg-rose-500/20 text-rose-200"
+                : sideModel.height < 3
+                ? "bg-amber-500/20 text-amber-200"
+                : "bg-emerald-500/20 text-emerald-200"
+            }`}
+            title="ความยาวเงาหลังรถ = ระยะ × ตัวคูณนี้"
+          >
+            เงา ×{sideModel.height <= H_CAR + 0.15 ? "∞" : shadowReach.toFixed(1)}
+          </span>
+        </div>
+
+        {/* เกณฑ์ % ที่ต้องเห็นถึงจะอ่านสถานะช่องได้ */}
+        <div className="flex items-center gap-2">
+          <label className="text-[11px] text-slate-400" title="LiDAR ต้องเห็นพื้นที่ช่องอย่างน้อยกี่ % ถึงจะมั่นใจว่าว่าง/มีรถ">อ่านได้เมื่อเห็น ≥</label>
+          <input
+            type="range"
+            min={10}
+            max={90}
+            step={5}
+            value={readPct}
+            onChange={(e) => setReadPct(parseInt(e.target.value))}
+            className="w-24 accent-sky-400 h-1.5"
+          />
+          <span className="text-[11px] font-mono text-sky-300 w-9">{readPct}%</span>
         </div>
 
         <div className="flex items-center gap-1.5 ml-auto">
@@ -1222,7 +1326,7 @@ export default function Dashboard() {
               {/* spots */}
               {spots.map((s) => {
                 const { cx, cy } = spotCenter(s);
-                const det = isCovered(s, sensors, obstacles, cars);
+                const det = isCovered(s, sensors, obstacles, cars, shadowReach, readFrac);
                 const spotSel = editSel?.kind === "spot" && editSel.id === s.id;
                 return (
                   <g
