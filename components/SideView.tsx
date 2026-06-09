@@ -11,7 +11,7 @@ import { LIDAR_MODELS, getModel, type LidarModel } from "@/lib/lidarModels";
  *  - เลือกรุ่น LiDAR (บังคับขีดจำกัด) + ภาพ illustration ตามฟอร์มจริง
  */
 
-const SKY = "#0a1322";
+const SKY = "#1a1a1a";
 const BEAM = "#38bdf8";
 const GREEN = "#22c55e";
 const RED = "#ef4444";
@@ -474,7 +474,7 @@ function CoverageInset({ m }: { m: SideModel }) {
   const farM = isFinite(m.sim.farGround) ? m.sim.farGround : m.range;
   const effR = Math.min(R, farM / m.metersPerPx);
   return (
-    <div className="absolute top-2 left-2 z-10 rounded-lg border border-white/15 bg-[#0d1726]/90 backdrop-blur p-1.5" style={{ width: 150 }}>
+    <div className="absolute top-2 left-2 z-10 rounded-lg border border-white/15 bg-[#252526]/90 backdrop-blur p-1.5" style={{ width: 150 }}>
       <div className="text-[9px] text-slate-300 mb-0.5 px-0.5 flex items-center justify-between">
         <span>มุมมองบน · รัศมี</span><span className="font-mono text-sky-300">{(R * m.metersPerPx).toFixed(0)}m</span>
       </div>
@@ -488,7 +488,7 @@ function CoverageInset({ m }: { m: SideModel }) {
         <line x1={o.x} y1={o.y} x2={far.x} y2={far.y} stroke="#fde68a" strokeWidth={R * 0.016} strokeDasharray={`${R * 0.05} ${R * 0.035}`} />
         {/* ช่องจอด */}
         {m.minimap.spots.map((sp) => (
-          <circle key={sp.id} cx={sp.x} cy={sp.y} r={R * 0.03 + 2} fill={sp.in ? (sp.occ ? "#ef4444" : "#22c55e") : "#1e2f49"} stroke={sp.in ? "#fff" : "#33507d"} strokeWidth={sp.in ? R * 0.01 : 0} />
+          <circle key={sp.id} cx={sp.x} cy={sp.y} r={R * 0.03 + 2} fill={sp.in ? (sp.occ ? "#ef4444" : "#22c55e") : "#2d2d30"} stroke={sp.in ? "#fff" : "#3f3f46"} strokeWidth={sp.in ? R * 0.01 : 0} />
         ))}
         {/* เสา/ต้นไม้ */}
         {m.minimap.obstacles.map((ob, i) => (<rect key={i} x={ob.x - R * 0.025} y={ob.y - R * 0.025} width={R * 0.05} height={R * 0.05} fill={ob.in ? "#f59e0b" : "#3f3a2a"} />))}
@@ -557,17 +557,17 @@ export function SideViewCanvas({ model: m }: { model: SideModel }) {
       {m.minimap && <CoverageInset m={m} />}
       <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full block touch-none select-none" style={{ maxHeight: "60vh" }} onPointerMove={onMove} onPointerUp={endDrag} onPointerLeave={endDrag}>
         <defs>
-          <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0e1c30" /><stop offset="100%" stopColor={SKY} /></linearGradient>
+          <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#252526" /><stop offset="100%" stopColor={SKY} /></linearGradient>
           <linearGradient id="beamGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor={BEAM} stopOpacity="0.42" /><stop offset="100%" stopColor={BEAM} stopOpacity="0.06" /></linearGradient>
         </defs>
         <rect x={0} y={0} width={VB_W} height={VB_H} fill="url(#skyGrad)" />
 
-        {yTicks.map((mm) => (<g key={`y${mm}`}><line x1={M_L} y1={sy(mm)} x2={VB_W - M_R} y2={sy(mm)} stroke="#1e3354" strokeWidth={1} /><text x={M_L - 8} y={sy(mm) + 4} textAnchor="end" fontSize={11} fill="#64748b">{mm}</text></g>))}
+        {yTicks.map((mm) => (<g key={`y${mm}`}><line x1={M_L} y1={sy(mm)} x2={VB_W - M_R} y2={sy(mm)} stroke="#2b2b2b" strokeWidth={1} /><text x={M_L - 8} y={sy(mm) + 4} textAnchor="end" fontSize={11} fill="#64748b">{mm}</text></g>))}
         <text x={16} y={sy(maxY / 2)} fontSize={11} fill="#64748b" transform={`rotate(-90 16 ${sy(maxY / 2)})`} textAnchor="middle">ความสูง (m)</text>
 
-        <rect x={M_L} y={GROUND_Y} width={plotW} height={VB_H - GROUND_Y} fill="#0c1830" />
-        <line x1={M_L} y1={GROUND_Y} x2={VB_W - M_R} y2={GROUND_Y} stroke="#33507d" strokeWidth={2} />
-        {xTicks.map((mm) => (<g key={`x${mm}`}><line x1={sx(mm)} y1={GROUND_Y} x2={sx(mm)} y2={GROUND_Y + 5} stroke="#33507d" strokeWidth={1} /><text x={sx(mm)} y={GROUND_Y + 18} textAnchor="middle" fontSize={11} fill="#64748b">{mm}</text></g>))}
+        <rect x={M_L} y={GROUND_Y} width={plotW} height={VB_H - GROUND_Y} fill="#181818" />
+        <line x1={M_L} y1={GROUND_Y} x2={VB_W - M_R} y2={GROUND_Y} stroke="#3f3f46" strokeWidth={2} />
+        {xTicks.map((mm) => (<g key={`x${mm}`}><line x1={sx(mm)} y1={GROUND_Y} x2={sx(mm)} y2={GROUND_Y + 5} stroke="#3f3f46" strokeWidth={1} /><text x={sx(mm)} y={GROUND_Y + 18} textAnchor="middle" fontSize={11} fill="#64748b">{mm}</text></g>))}
         <text x={VB_W - M_R} y={GROUND_Y + 18} textAnchor="end" fontSize={11} fill="#64748b">ระยะจากเสา (m)</text>
 
         <path d={beamPath} fill="url(#beamGrad)" stroke="none" />
@@ -598,7 +598,7 @@ export function SideViewCanvas({ model: m }: { model: SideModel }) {
               <rect x={x} y={GROUND_Y - 5} width={w} height={5} fill={col} fillOpacity={0.3} stroke={col} strokeWidth={1.2} strokeDasharray={blind ? "3 3" : undefined} />
               {it.occupied ? (
                 <g className="car-enter">
-                  <rect x={x} y={yTop} width={w} height={hPx} rx={3} fill={info.status === "full" ? "#311a1a" : "#26303f"} stroke={col} strokeWidth={1.8} strokeDasharray={blind ? "4 3" : undefined} />
+                  <rect x={x} y={yTop} width={w} height={hPx} rx={3} fill={info.status === "full" ? "#311a1a" : "#2d2d30"} stroke={col} strokeWidth={1.8} strokeDasharray={blind ? "4 3" : undefined} />
                   <rect x={x + w * 0.22} y={yTop} width={w * 0.5} height={hPx * 0.42} rx={2} fill={info.status === "full" ? "#5a2530" : "#374151"} />
                   <text x={x + w / 2} y={yTop - 14} textAnchor="middle" fontSize={9.5} fill={col} fontWeight="bold">{STATUS_LABEL[info.status]}</text>
                   <text x={x + w / 2} y={yTop - 4} textAnchor="middle" fontSize={8.5} fill="#94a3b8">{it.label} {it.h.toFixed(2)}m</text>
@@ -637,7 +637,7 @@ export function SideViewCanvas({ model: m }: { model: SideModel }) {
       </svg>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-[11px] text-slate-300 border-t border-white/10 bg-[#0d1726]">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-[11px] text-slate-300 border-t border-white/10 bg-[#252526]">
         <span className="inline-flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm" style={{ background: "rgba(56,189,248,0.4)" }} /> ลำแสง</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block w-4 h-1 rounded" style={{ background: GREEN }} /> พื้นที่ส่องถึง</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm" style={{ background: "rgba(34,197,94,0.3)", border: `1px solid ${GREEN}` }} /> ว่าง</span>
@@ -663,10 +663,10 @@ function MiniMap({ m }: { m: SideModel }) {
   const p1 = { x: o.x + m.minimap.perp.x * ch, y: o.y + m.minimap.perp.y * ch };
   const p2 = { x: o.x - m.minimap.perp.x * ch, y: o.y - m.minimap.perp.y * ch };
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full rounded-md border border-white/10 bg-[#0a1322]" style={{ maxHeight: 150 }}>
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full rounded-md border border-white/10 bg-[#1a1a1a]" style={{ maxHeight: 150 }}>
       <polygon points={`${o.x},${o.y} ${p1.x + m.minimap.dir.x * len},${p1.y + m.minimap.dir.y * len} ${p2.x + m.minimap.dir.x * len},${p2.y + m.minimap.dir.y * len}`} fill="rgba(56,189,248,0.12)" />
       {m.minimap.spots.map((s) => (
-        <circle key={s.id} cx={s.x} cy={s.y} r={Math.max(4, W / 90)} fill={s.in ? (s.occ ? RED : GREEN) : "#1e2f49"} stroke={s.in ? "#fff" : "#33507d"} strokeWidth={s.in ? 1.5 : 0.8} />
+        <circle key={s.id} cx={s.x} cy={s.y} r={Math.max(4, W / 90)} fill={s.in ? (s.occ ? RED : GREEN) : "#2d2d30"} stroke={s.in ? "#fff" : "#3f3f46"} strokeWidth={s.in ? 1.5 : 0.8} />
       ))}
       {m.minimap.obstacles.map((ob, i) => (<rect key={i} x={ob.x - 4} y={ob.y - 4} width={8} height={8} fill={ob.in ? AMBER : "#3f3a2a"} />))}
       <line x1={o.x} y1={o.y} x2={far.x} y2={far.y} stroke="#fde68a" strokeWidth={2} strokeDasharray="6 4" />
@@ -698,8 +698,8 @@ export function SideViewPanel({ model: m }: { model: SideModel }) {
         <div className="space-y-2">
           <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wide">แหล่งฉาก</div>
           <div className="flex rounded-lg overflow-hidden border border-white/10 text-[11px]">
-            <button onClick={() => m.setSceneSource("layout")} className={`flex-1 py-1.5 font-semibold ${m.effSource === "layout" ? "bg-sky-500 text-white" : "bg-[#13243c] text-slate-300"}`}>จากผัง top view</button>
-            <button onClick={() => m.setSceneSource("manual")} className={`flex-1 py-1.5 font-semibold ${m.effSource === "manual" ? "bg-sky-500 text-white" : "bg-[#13243c] text-slate-300"}`}>ตั้งเอง</button>
+            <button onClick={() => m.setSceneSource("layout")} className={`flex-1 py-1.5 font-semibold ${m.effSource === "layout" ? "bg-[#0078d4] text-white" : "bg-[#2d2d30] text-slate-300"}`}>จากผัง top view</button>
+            <button onClick={() => m.setSceneSource("manual")} className={`flex-1 py-1.5 font-semibold ${m.effSource === "manual" ? "bg-[#0078d4] text-white" : "bg-[#2d2d30] text-slate-300"}`}>ตั้งเอง</button>
           </div>
           {m.effSource === "layout" && (
             <>
@@ -712,7 +712,7 @@ export function SideViewPanel({ model: m }: { model: SideModel }) {
       )}
 
       {/* สรุปสถานะ */}
-      <div className="rounded-lg bg-[#0a1322] border border-white/10 p-2.5">
+      <div className="rounded-lg bg-[#1a1a1a] border border-white/10 p-2.5">
         <div className="text-[11px] text-slate-400 mb-1.5">สถานะที่ LiDAR อ่านได้ในแนวตัดนี้</div>
         <div className="grid grid-cols-3 gap-1.5 text-center">
           <div className="rounded-md py-1" style={{ background: "rgba(34,197,94,0.15)" }}><div className="text-base font-bold text-emerald-300">{m.cFree}</div><div className="text-[9px] text-emerald-200/80">ว่าง</div></div>
@@ -725,11 +725,11 @@ export function SideViewPanel({ model: m }: { model: SideModel }) {
       {/* รุ่น LiDAR */}
       <div className="space-y-2">
         <div className="text-[11px] font-bold text-sky-300 uppercase tracking-wide">ยี่ห้อ / รุ่น LiDAR</div>
-        <select value={m.modelId} onChange={(e) => m.setModelId(e.target.value)} className="w-full bg-[#13243c] border border-white/10 rounded-md text-xs px-2 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-sky-400">
+        <select value={m.modelId} onChange={(e) => m.setModelId(e.target.value)} className="w-full bg-[#2d2d30] border border-white/10 rounded-md text-xs px-2 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-sky-400">
           {LIDAR_MODELS.map((md) => (<option key={md.id} value={md.id}>{md.brand} {md.model} — {md.tier}</option>))}
         </select>
-        <div className="rounded-lg bg-[#0a1322] border border-white/10 p-2.5 flex gap-3">
-          <div className="shrink-0 rounded-md bg-[#0e1c30] p-1 grid place-items-center"><LidarVisual model={m.model} size={56} /></div>
+        <div className="rounded-lg bg-[#1a1a1a] border border-white/10 p-2.5 flex gap-3">
+          <div className="shrink-0 rounded-md bg-[#252526] p-1 grid place-items-center"><LidarVisual model={m.model} size={56} /></div>
           <div className="text-[10.5px] text-slate-300 grid grid-cols-2 gap-x-2 gap-y-0.5 flex-1">
             <div>ระยะสูงสุด: <span className="text-sky-300 font-mono">{m.model.maxRange}m</span></div>
             <div>vFOV: <span className="text-sky-300 font-mono">{m.model.vfov}°</span></div>
@@ -767,7 +767,7 @@ export function SideViewPanel({ model: m }: { model: SideModel }) {
           <div className="flex gap-1">
             <button onClick={m.driveIn} className="text-[11px] px-2 py-1 rounded-md font-semibold border bg-emerald-500/20 border-emerald-400/40 text-emerald-100 hover:bg-emerald-500/30">+รถเข้า</button>
             <button onClick={m.driveOut} className="text-[11px] px-2 py-1 rounded-md font-semibold border bg-rose-500/20 border-rose-400/40 text-rose-100 hover:bg-rose-500/30">−รถออก</button>
-            {m.effSource === "manual" && <button onClick={m.reroll} className="text-[11px] px-2 py-1 rounded-md bg-[#13243c] border border-white/10 text-slate-200 hover:bg-[#1a2f4d]">🎲</button>}
+            {m.effSource === "manual" && <button onClick={m.reroll} className="text-[11px] px-2 py-1 rounded-md bg-[#2d2d30] border border-white/10 text-slate-200 hover:bg-[#37373d]">🎲</button>}
           </div>
         </div>
         <div className="space-y-1.5">
@@ -775,7 +775,7 @@ export function SideViewPanel({ model: m }: { model: SideModel }) {
             const info = m.itemInfo[i];
             const col = STATUS_COLOR[info.status];
             return (
-              <div key={it.key} className="rounded-md bg-[#0a1322] border border-white/10 p-2">
+              <div key={it.key} className="rounded-md bg-[#1a1a1a] border border-white/10 p-2">
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-semibold text-slate-200 w-14">ช่อง {n + 1}</span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: `${col}22`, color: col, border: `1px solid ${col}` }}>{STATUS_LABEL[info.status]}</span>
@@ -787,7 +787,7 @@ export function SideViewPanel({ model: m }: { model: SideModel }) {
                 </div>
                 {it.occupied && (
                   <div className="mt-1.5 flex items-center gap-2">
-                    <select value={it.typeIdx} onChange={(e) => m.setItemType(i, parseInt(e.target.value))} className="bg-[#13243c] border border-white/10 rounded text-[10px] px-1 py-0.5 text-slate-200">
+                    <select value={it.typeIdx} onChange={(e) => m.setItemType(i, parseInt(e.target.value))} className="bg-[#2d2d30] border border-white/10 rounded text-[10px] px-1 py-0.5 text-slate-200">
                       {CAR_TYPES.map((c, ci) => (<option key={ci} value={ci}>{c.label}</option>))}
                     </select>
                     <input type="range" min={1.2} max={2.4} step={0.05} value={it.baseH} onChange={(e) => m.setItemHeight(i, parseFloat(e.target.value))} className="flex-1 accent-sky-400 h-1.5" />
@@ -802,7 +802,7 @@ export function SideViewPanel({ model: m }: { model: SideModel }) {
       </div>
 
       {/* คำแนะนำ */}
-      <div className="rounded-lg bg-[#0a1322] border border-white/10 p-2.5">
+      <div className="rounded-lg bg-[#1a1a1a] border border-white/10 p-2.5">
         <div className="text-[11px] font-semibold text-sky-300 mb-1">คำแนะนำ</div>
         <ul className="space-y-1">{m.recs.map((r, i) => (<li key={i} className="text-[10.5px] text-slate-300 leading-snug">• {r}</li>))}</ul>
       </div>

@@ -25,7 +25,7 @@ function Slider({ label, val, unit, min, max, step, onChange }: { label: string;
 
 function Card({ children, title }: { children: React.ReactNode; title: string }) {
   return (
-    <section className="rounded-xl border border-white/10 bg-[#0d1726] p-5">
+    <section className="rounded-xl border border-white/10 bg-[#252526] p-5">
       <h2 className="text-base font-bold text-sky-300 mb-3">{title}</h2>
       {children}
     </section>
@@ -73,8 +73,8 @@ export default function LogicPage() {
 
   return (
     <div className="min-h-screen text-slate-200">
-      <header className="flex items-center gap-3 px-5 py-3 border-b border-white/10 bg-[#0d1726]/80 backdrop-blur sticky top-0 z-10">
-        <a href="/" className="text-xs px-3 py-1.5 rounded-md bg-[#13243c] border border-white/10 text-slate-200 hover:bg-[#1a2f4d]">← กลับแดชบอร์ด</a>
+      <header className="flex items-center gap-3 px-5 py-3 border-b border-white/10 bg-[#252526]/80 backdrop-blur sticky top-0 z-10">
+        <a href="/" className="text-xs px-3 py-1.5 rounded-md bg-[#2d2d30] border border-white/10 text-slate-200 hover:bg-[#37373d]">← กลับแดชบอร์ด</a>
         <div className="font-bold text-sm text-white">Logic การตรวจจับ & ขีดจำกัดเครื่องมือ LiDAR</div>
       </header>
 
@@ -135,7 +135,7 @@ export default function LogicPage() {
             <Diagram caption="x_near / x_far คือขอบโซนที่ลำแสงแตะพื้น · เงาหลังรถสูงยาว = d·H/(H−h) → ยกเสาสูง (H มาก) เงาสั้นลง รถข้างหลังจึงพ้นเงา">
               <MiniScene H={4.5} tilt={12} fov={30} range={30} grazeIndex={0} objs={[{ x: 10, h: 1.9, label: "รถสูง" }, { x: 16, h: 1.4, target: true }]} />
             </Diagram>
-            <div className="space-y-2 text-sm text-slate-300 font-mono bg-[#0a1322] rounded-lg p-3 border border-white/10">
+            <div className="space-y-2 text-sm text-slate-300 font-mono bg-[#1a1a1a] rounded-lg p-3 border border-white/10">
               <div>จุดตกพื้น: <span className="text-sky-300">x = H / tan(θ)</span></div>
               <div>โซนใกล้สุด: <span className="text-sky-300">H / tan(tilt + FOV/2)</span></div>
               <div>โซนไกลสุด: <span className="text-sky-300">H / tan(tilt − FOV/2)</span></div>
@@ -146,12 +146,12 @@ export default function LogicPage() {
         </Card>
 
         {/* 5 — ตัวจำลองสด */}
-        <section className="rounded-xl border border-sky-400/30 bg-[#0d1726] p-5">
+        <section className="rounded-xl border border-sky-400/30 bg-[#252526] p-5">
           <h2 className="text-base font-bold text-sky-300 mb-1">5) ตัวจำลองสด — “แคปมุมนี้” แล้วดูว่าทำไมเห็น/ไม่เห็น</h2>
           <p className="text-xs text-slate-400 mb-3">เลือกรุ่น + ปรับความสูง/มุม แล้วดูภาพจำลองด้านล่างอัปเดตทันที (รถคันที่ 3 เป็นตัวทดสอบ ‘เห็น/ไม่เห็น’)</p>
           <div className="grid md:grid-cols-2 gap-5">
             <div className="space-y-3">
-              <select value={modelId} onChange={(e) => pickModel(e.target.value)} className="w-full bg-[#13243c] border border-white/10 rounded-md text-sm px-2 py-2 text-white">
+              <select value={modelId} onChange={(e) => pickModel(e.target.value)} className="w-full bg-[#2d2d30] border border-white/10 rounded-md text-sm px-2 py-2 text-white">
                 {LIDAR_MODELS.map((md) => (<option key={md.id} value={md.id}>{md.brand} {md.model} — {md.tier}</option>))}
               </select>
               <Slider label="ความสูงติดตั้ง" val={H} unit=" m" min={2} max={Math.max(12, model.recMount[1] + 2)} step={0.1} onChange={setH} />
@@ -166,7 +166,7 @@ export default function LogicPage() {
                 <span className="text-sm text-slate-300">ผลประเมินรุ่น {model.model}</span>
                 <span className="text-lg font-bold" style={{ color: verdictColor }}>{verdict}</span>
               </div>
-              <div className="rounded-lg bg-[#0a1322] border border-white/10 p-3 text-sm space-y-1.5">
+              <div className="rounded-lg bg-[#1a1a1a] border border-white/10 p-3 text-sm space-y-1.5">
                 <Row k="โซนพื้นที่เห็น" v={`${isFinite(cov.near) ? cov.near.toFixed(1) : "0"} – ${isFinite(cov.far) ? cov.far.toFixed(1) : "∞"} m`} />
                 <Row k="ระยะห่างจุดที่ขอบไกล" v={`${spacingFar.toFixed(2)} m`} ok={spacingOk} />
                 <Row k="ความสูงติดตั้งแนะนำ" v={`${model.recMount[0]}–${model.recMount[1]} m`} ok={mountOk} />
@@ -200,7 +200,7 @@ export default function LogicPage() {
               <tbody>
                 {LIDAR_MODELS.map((md) => (
                   <tr key={md.id} className={`border-b border-white/5 ${md.id === modelId ? "bg-sky-500/10" : ""}`}>
-                    <td className="py-2 px-2"><div className="flex items-center gap-2"><div className="shrink-0 rounded bg-[#0e1c30] p-0.5"><LidarVisual model={md} size={34} /></div><div><div className="font-semibold text-white">{md.brand} {md.model}</div><div className="text-[10px] text-slate-500">{md.tier}</div></div></div></td>
+                    <td className="py-2 px-2"><div className="flex items-center gap-2"><div className="shrink-0 rounded bg-[#252526] p-0.5"><LidarVisual model={md} size={34} /></div><div><div className="font-semibold text-white">{md.brand} {md.model}</div><div className="text-[10px] text-slate-500">{md.tier}</div></div></div></td>
                     <td className="text-right px-2 font-mono">{md.channels || "—"}</td>
                     <td className="text-right px-2 font-mono text-sky-300">{md.maxRange} m</td>
                     <td className="text-right px-2 font-mono">{md.minRange} m</td>

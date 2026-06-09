@@ -111,9 +111,9 @@ export function MiniScene({
   }
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} width="100%" className="rounded-lg bg-[#0a1322] border border-white/10">
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" className="rounded-lg bg-[#1a1a1a] border border-white/10">
       {/* ground */}
-      <line x1={oX} y1={gY} x2={width - mR} y2={gY} stroke="#33507d" strokeWidth={1.5} />
+      <line x1={oX} y1={gY} x2={width - mR} y2={gY} stroke="#3f3f46" strokeWidth={1.5} />
       {Array.from({ length: Math.floor(XM / 5) + 1 }, (_, k) => k * 5).map((mm) => (
         <text key={mm} x={sx(mm)} y={gY + 13} textAnchor="middle" fontSize={8} fill="#475569">{mm}m</text>
       ))}

@@ -2,8 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== VS Code "Dark Modern" theme ===== */
 :root {
-  --bg: #0b1220;
+  --vsc-editor: #1e1e1e;
+  --vsc-panel: #252526;
+  --vsc-card: #1a1a1a;
+  --vsc-input: #2d2d30;
+  --vsc-hover: #37373d;
+  --vsc-border: #2b2b2b;
+  --vsc-border-strong: #3c3c3c;
+  --vsc-text: #d4d4d4;
+  --vsc-muted: #858585;
+  --vsc-accent: #0078d4;
+  --vsc-accent-hover: #1a86d8;
+  --vsc-status: #007acc;
+  --vsc-link: #4fc1ff;
 }
 
 html,
@@ -12,64 +25,104 @@ body {
 }
 
 body {
-  background: radial-gradient(1200px 600px at 70% -10%, #15233b 0%, #0b1220 55%);
-  color: #e6edf6;
+  background: var(--vsc-editor);
+  color: var(--vsc-text);
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    "Sarabun", "Noto Sans Thai", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Car drives into the stall when it becomes occupied */
+code,
+kbd,
+.font-mono,
+.mono {
+  font-family: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas,
+    "SF Mono", "Roboto Mono", monospace;
+}
+
+::selection {
+  background: rgba(0, 120, 212, 0.35);
+}
+
+button {
+  transition: background-color 0.12s ease, border-color 0.12s ease,
+    color 0.12s ease, box-shadow 0.12s ease, transform 0.08s ease;
+}
+button:active {
+  transform: translateY(0.5px);
+}
+input[type="range"] {
+  cursor: pointer;
+}
+select,
+input {
+  color-scheme: dark;
+}
+
 @keyframes driveIn {
-  0% {
-    transform: translateY(-26px) scale(0.9);
-    opacity: 0;
-  }
-  60% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
+  0% { transform: translateY(-26px) scale(0.9); opacity: 0; }
+  60% { opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
 }
-
 .car-enter {
   transform-box: fill-box;
   transform-origin: center;
   animation: driveIn 0.55s ease-out;
 }
 
-/* Soft pulse for the selected LiDAR coverage ring */
 @keyframes ringPulse {
-  0%,
-  100% {
-    opacity: 0.85;
-  }
-  50% {
-    opacity: 0.45;
-  }
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.45; }
 }
-
 .ring-selected {
   animation: ringPulse 2.2s ease-in-out infinite;
 }
 
-/* Thin custom scrollbar for the side panel */
-.thin-scroll::-webkit-scrollbar {
-  width: 8px;
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
-.thin-scroll::-webkit-scrollbar-thumb {
-  background: #24405f;
+.live-dot {
+  animation: livePulse 1.6s ease-in-out infinite;
+}
+
+/* VS Code style scrollbars */
+.thin-scroll::-webkit-scrollbar,
+body ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.thin-scroll::-webkit-scrollbar-thumb,
+body ::-webkit-scrollbar-thumb {
+  background: #424242;
+  border: 2px solid transparent;
+  background-clip: content-box;
   border-radius: 8px;
 }
-.thin-scroll::-webkit-scrollbar-track {
+.thin-scroll::-webkit-scrollbar-thumb:hover,
+body ::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+  background-clip: content-box;
+}
+.thin-scroll::-webkit-scrollbar-track,
+body ::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/* Parking stall hover highlight */
 .stall {
   transition: stroke 0.12s ease, fill 0.12s ease;
 }
 .stall:hover {
-  stroke: #7dd3fc !important;
-  fill: rgba(125, 211, 252, 0.08) !important;
+  stroke: #4fc1ff !important;
+  fill: rgba(79, 193, 255, 0.1) !important;
+}
+
+.vsc-card {
+  background: var(--vsc-card);
+  border: 1px solid var(--vsc-border);
+}
+.glow-accent {
+  box-shadow: 0 0 0 1px rgba(0, 120, 212, 0.25),
+    0 8px 24px -12px rgba(0, 120, 212, 0.45);
 }

@@ -887,11 +887,15 @@ export default function Dashboard() {
     const elapsedSec = sessionStart.current
       ? (Date.now() - sessionStart.current) / 1000
       : 0;
-    const turnoverPerHr =
-      elapsedSec > 45 ? exited / (elapsedSec / 3600) : null;
+    const elapsedMin = elapsedSec / 60;
+    // เวลาจอดเฉลี่ยจาก "ค่าจริง" ของรถที่ออกไปแล้ว
     const avgDwell = dwell.length
       ? dwell.reduce((a, b) => a + b, 0) / dwell.length / 1000
       : null;
+    // หมุนเวียนต่อช่องต่อชั่วโมง = 3600 / เวลาจอดเฉลี่ย(วินาที)
+    // ใช้ค่าเฉลี่ยจากรถที่ออกจริง (นิ่งกว่าการ extrapolate จำนวนน้อย ๆ)
+    const turnoverPerSpotHr =
+      dwell.length >= 3 && avgDwell ? 3600 / avgDwell : null;
     return {
       total,
       detectedCount,
@@ -900,8 +904,11 @@ export default function Dashboard() {
       parkedNow,
       coveragePct,
       occPct,
-      turnoverPerHr,
+      turnoverPerSpotHr,
       avgDwell,
+      elapsedMin,
+      exitedReal: exited,
+      dwellN: dwell.length,
     };
   }, [spots, sensors, exited, dwell, obstacles, cars, shadowReach, readFrac]);
 
@@ -937,9 +944,9 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* ---------- TOP BAR ---------- */}
-      <header className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#0d1726]/80 backdrop-blur">
+      <header className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#252526]/80 backdrop-blur">
         <div className="flex items-center gap-2 mr-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-400 to-blue-600 grid place-items-center font-black text-white">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0098ff] to-[#0050a0] grid place-items-center font-black text-white">
             L
           </div>
           <div className="leading-tight">
@@ -957,7 +964,7 @@ export default function Dashboard() {
           <select
             value={layoutId}
             onChange={(e) => loadLayout(e.target.value)}
-            className="bg-[#13243c] border border-white/10 rounded-md text-xs px-2 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-sky-400"
+            className="bg-[#2d2d30] border border-white/10 rounded-md text-xs px-2 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-sky-400"
           >
             {LAYOUTS.map((l) => (
               <option key={l.id} value={l.id}>
@@ -1025,7 +1032,7 @@ export default function Dashboard() {
           </button>
           <button
             onClick={resetCurrent}
-            className="text-xs px-3 py-1.5 rounded-md bg-[#13243c] border border-white/10 text-slate-200 hover:bg-[#1a2f4d]"
+            className="text-xs px-3 py-1.5 rounded-md bg-[#2d2d30] border border-white/10 text-slate-200 hover:bg-[#37373d]"
           >
             ↺ รีเซ็ต
           </button>
@@ -1048,7 +1055,7 @@ export default function Dashboard() {
               <button
                 onClick={() => setView("top")}
                 className={`px-3 py-1 font-semibold ${
-                  view === "top" ? "bg-sky-500 text-white" : "bg-[#13243c] text-slate-300 hover:bg-[#1a2f4d]"
+                  view === "top" ? "bg-[#0078d4] text-white" : "bg-[#2d2d30] text-slate-300 hover:bg-[#37373d]"
                 }`}
               >
                 Top View
@@ -1056,7 +1063,7 @@ export default function Dashboard() {
               <button
                 onClick={() => setView("side")}
                 className={`px-3 py-1 font-semibold ${
-                  view === "side" ? "bg-sky-500 text-white" : "bg-[#13243c] text-slate-300 hover:bg-[#1a2f4d]"
+                  view === "side" ? "bg-[#0078d4] text-white" : "bg-[#2d2d30] text-slate-300 hover:bg-[#37373d]"
                 }`}
               >
                 Side View
@@ -1064,9 +1071,9 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className={`relative rounded-xl border border-white/10 bg-[#0a1322] overflow-hidden ${view === "side" ? "hidden" : ""}`}>
+          <div className={`relative rounded-xl border border-white/10 bg-[#1a1a1a] overflow-hidden ${view === "side" ? "hidden" : ""}`}>
             {/* floating toolbar */}
-            <div className="absolute z-10 top-3 left-3 flex flex-col gap-1.5 bg-[#0d1726]/90 backdrop-blur p-1.5 rounded-lg border border-white/10">
+            <div className="absolute z-10 top-3 left-3 flex flex-col gap-1.5 bg-[#252526]/90 backdrop-blur p-1.5 rounded-lg border border-white/10">
               <ToolBtn
                 active={mode === "select"}
                 title="เลือก / ลาก"
@@ -1204,7 +1211,7 @@ export default function Dashboard() {
               onPointerDown={onCanvasPointerDown}
             >
               {/* background */}
-              <rect x={0} y={0} width={layout.width} height={layout.height} fill="#0a1322" />
+              <rect x={0} y={0} width={layout.width} height={layout.height} fill="#1a1a1a" />
               {/* lanes */}
               {layout.lanes.map((ln, i) => (
                 <rect
@@ -1213,7 +1220,7 @@ export default function Dashboard() {
                   y={ln.y}
                   width={ln.w}
                   height={ln.h}
-                  fill="#101e33"
+                  fill="#2a2a2a"
                   rx={6}
                 />
               ))}
@@ -1266,7 +1273,7 @@ export default function Dashboard() {
                       y={ob.y}
                       width={ob.w}
                       height={ob.h}
-                      fill="#3a4a5f"
+                      fill="#45454d"
                       stroke="#5b7088"
                       strokeWidth={1.5}
                       rx={3}
@@ -1363,7 +1370,7 @@ export default function Dashboard() {
                       height={s.h}
                       rx={4}
                       fill="rgba(255,255,255,0.02)"
-                      stroke="#2b425f"
+                      stroke="#3a3a3a"
                       strokeWidth={1.4}
                     />
                     {det && !s.occupied && (
@@ -1427,7 +1434,7 @@ export default function Dashboard() {
                         cx={se.x}
                         cy={se.y}
                         r={13}
-                        fill="#0b2740"
+                        fill="#1e1e1e"
                         stroke={sel ? "#7dd3fc" : BLUE}
                         strokeWidth={sel ? 3 : 2}
                       />
@@ -1469,10 +1476,10 @@ export default function Dashboard() {
                           cy={se.y}
                           r={8}
                           fill="#7dd3fc"
-                          stroke="#0b2740"
+                          stroke="#1e1e1e"
                           strokeWidth={2}
                         />
-                        <circle cx={se.x + se.radius} cy={se.y} r={2.5} fill="#0b2740" />
+                        <circle cx={se.x + se.radius} cy={se.y} r={2.5} fill="#1e1e1e" />
                       </g>
                     )}
                   </g>
@@ -1481,7 +1488,7 @@ export default function Dashboard() {
             </svg>
 
             {/* legend */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-[11px] text-slate-300 border-t border-white/10 bg-[#0d1726]">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-[11px] text-slate-300 border-t border-white/10 bg-[#252526]">
               <Legend color={GREEN} label="ว่าง (ตรวจจับได้)" />
               <Legend color={RED} label="เต็ม (มีรถ)" />
               <Legend color={GRAY} label="จุดบอด (LiDAR มองไม่เห็น)" />
@@ -1510,14 +1517,14 @@ export default function Dashboard() {
           </div>
 
           {view === "side" && (
-            <div className="relative rounded-xl border border-white/10 bg-[#0a1322] overflow-hidden">
+            <div className="relative rounded-xl border border-white/10 bg-[#1a1a1a] overflow-hidden">
               <SideViewCanvas model={sideModel} />
             </div>
           )}
         </section>
 
         {/* ----- RIGHT PANEL ----- */}
-        <aside className="border-l border-white/10 bg-[#0d1726] flex flex-col max-h-[calc(100vh-58px)]">
+        <aside className="border-l border-white/10 bg-[#252526] flex flex-col max-h-[calc(100vh-58px)]">
           {view === "side" ? (
             <SideViewPanel model={sideModel} />
           ) : (
@@ -1574,6 +1581,27 @@ export default function Dashboard() {
           )}
         </aside>
       </div>
+
+      {/* ---------- VS Code-style status bar ---------- */}
+      <footer
+        className="flex items-center gap-4 px-3 h-6 text-[11px] text-white shrink-0 select-none overflow-x-auto"
+        style={{ background: "var(--vsc-status)" }}
+      >
+        <span className="flex items-center gap-1.5 font-semibold whitespace-nowrap">
+          <span className="w-2 h-2 rounded-full bg-emerald-300 live-dot" /> LiDAR ParkManager
+        </span>
+        <span className="opacity-90 whitespace-nowrap">⬚ {layout.name}</span>
+        <span className="opacity-90 whitespace-nowrap">เซนเซอร์ {sensors.length}</span>
+        <span className="opacity-90 whitespace-nowrap">
+          ครอบคลุม {stats.coveragePct.toFixed(0)}% ({stats.detectedCount}/{stats.total})
+        </span>
+        <span className="opacity-90 whitespace-nowrap">
+          {sideModel.model.brand} {sideModel.model.model} · สูง {sideModel.height.toFixed(1)}m
+        </span>
+        <span className="ml-auto opacity-90 whitespace-nowrap">เกณฑ์อ่าน ≥ {readPct}%</span>
+        <span className="opacity-90 whitespace-nowrap">{view === "side" ? "Side View" : "Top View"}</span>
+        <a href="/logic" className="opacity-90 hover:opacity-100 underline-offset-2 hover:underline whitespace-nowrap">Logic</a>
+      </footer>
     </div>
   );
 }
@@ -1601,8 +1629,8 @@ function ToolBtn({
         disabled
           ? "opacity-30 cursor-not-allowed text-slate-400"
           : active
-          ? "bg-sky-500 text-white"
-          : "bg-[#13243c] text-slate-200 hover:bg-[#1a2f4d]"
+          ? "bg-[#0078d4] text-white"
+          : "bg-[#2d2d30] text-slate-200 hover:bg-[#37373d]"
       }`}
     >
       {children}
@@ -1638,7 +1666,7 @@ function StatCard({
   accent?: string;
 }) {
   return (
-    <div className="rounded-lg bg-[#13243c] border border-white/10 p-2.5">
+    <div className="rounded-lg bg-[#2d2d30] border border-white/10 p-2.5">
       <div className="text-[10px] text-slate-400">{label}</div>
       <div className={`text-xl font-extrabold ${accent}`}>{value}</div>
       {sub && <div className="text-[10px] text-slate-500">{sub}</div>}
@@ -1695,9 +1723,9 @@ function OverviewTab({
 
       <div className="grid grid-cols-2 gap-2">
         <StatCard
-          label="หมุนเวียน / ชม."
-          value={stats.turnoverPerHr != null ? stats.turnoverPerHr.toFixed(0) : "—"}
-          sub="คันต่อชั่วโมง (จำลอง)"
+          label="หมุนเวียน/ช่อง·ชม."
+          value={stats.turnoverPerSpotHr != null ? stats.turnoverPerSpotHr.toFixed(1) : "—"}
+          sub={stats.turnoverPerSpotHr != null ? `จากเวลาจอดจริง (${stats.dwellN} คัน)` : `รอรถออก ≥ 3 คัน (${stats.dwellN})`}
           accent="text-amber-300"
         />
         <StatCard
@@ -1707,7 +1735,7 @@ function OverviewTab({
         />
       </div>
 
-      <div className="rounded-lg bg-[#13243c] border border-white/10 p-3 space-y-3">
+      <div className="rounded-lg bg-[#2d2d30] border border-white/10 p-3 space-y-3">
         <Bar label="อัตราครอบครอง (ของพื้นที่ตรวจจับ)" pct={stats.occPct} color="#f59e0b" />
         <Bar label="พื้นที่ตรวจจับ LiDAR" pct={stats.coveragePct} color={BLUE} />
         <div className="text-[11px] text-slate-400">
@@ -1721,9 +1749,14 @@ function OverviewTab({
         </div>
       </div>
 
+      <div className="rounded-lg bg-[#2d2d30] border border-white/10 p-3 text-[11px] text-slate-300">
+        <div className="font-semibold text-slate-200 mb-0.5">ค่าจริงจากเซสชันนี้</div>
+        รถออกจริงสะสม <b className="text-rose-300">{stats.exitedReal}</b> คัน · เข้าจริง <b className="text-emerald-300">{entered}</b> คัน · เวลาเดินจริง <b className="text-sky-300">{stats.elapsedMin != null ? stats.elapsedMin.toFixed(1) : "0"}</b> นาที
+        {stats.avgDwell != null && (<span> · เวลาจอดเฉลี่ย <b className="text-sky-300">{stats.avgDwell.toFixed(0)}s</b>/คัน</span>)}
+      </div>
+
       <div className="text-[11px] text-slate-500">
-        เซนเซอร์ทั้งหมด {sensorCount} ตัว · ตัวเลขสถิติคำนวณจากสิ่งที่ LiDAR “มองเห็น” เท่านั้น
-        ซึ่งสะท้อนว่าตำแหน่งเซนเซอร์ดีพอหรือยัง
+        เซนเซอร์ทั้งหมด {sensorCount} ตัว · “หมุนเวียน/ช่อง·ชม.” คำนวณจากเวลาจอดจริง (3600 ÷ เวลาจอดเฉลี่ย) จึงนิ่งกว่าการประมาณจากจำนวนน้อย ๆ
       </div>
     </div>
   );
@@ -1762,7 +1795,7 @@ function SensorTab({
         </p>
         <button
           onClick={onAdd}
-          className="text-xs px-3 py-2 rounded-md bg-sky-500 text-white font-semibold"
+          className="text-xs px-3 py-2 rounded-md bg-[#0078d4] text-white font-semibold"
         >
           ＋ เพิ่มเซนเซอร์ LiDAR
         </button>
@@ -1771,7 +1804,7 @@ function SensorTab({
   }
   return (
     <div className="space-y-3 text-xs">
-      <div className="rounded-lg bg-[#0b2740] border border-sky-500/30 p-3">
+      <div className="rounded-lg bg-[#1e1e1e] border border-sky-500/30 p-3">
         <div className="text-sky-300 font-bold mb-2">รายละเอียดเซนเซอร์</div>
         <Row k="ID" v={sensor.id} />
         <Row k="Code" v={sensor.code} />
@@ -1780,7 +1813,7 @@ function SensorTab({
           <input
             value={sensor.name}
             onChange={(e) => onRename(e.target.value)}
-            className="bg-[#13243c] border border-white/10 rounded px-2 py-0.5 text-right text-slate-100 w-40"
+            className="bg-[#2d2d30] border border-white/10 rounded px-2 py-0.5 text-right text-slate-100 w-40"
           />
         </div>
         <Row k="Type" v="Parking (overhead)" />
@@ -1788,7 +1821,7 @@ function SensorTab({
         <Row k="ตรวจจับช่องจอด" v={`${spotCount} ช่อง`} />
       </div>
 
-      <div className="rounded-lg bg-[#13243c] border border-white/10 p-3 space-y-2">
+      <div className="rounded-lg bg-[#2d2d30] border border-white/10 p-3 space-y-2">
         <div className="flex justify-between text-slate-300">
           <span>รัศมีตรวจจับ</span>
           <span className="font-semibold text-sky-300">{Math.round(sensor.radius)} px</span>
