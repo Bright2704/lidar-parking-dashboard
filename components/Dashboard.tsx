@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LAYOUTS, cloneLayout } from "@/lib/layouts";
 import { Lane, Obstacle, ParkEvent, Sensor, Spot } from "@/lib/types";
 import { useSideView, SideViewCanvas, SideViewPanel } from "./SideView";
+import NavDrawer from "./NavDrawer";
 
 // ---------- palette ----------
 const GREEN = "#22c55e";
@@ -945,6 +946,7 @@ export default function Dashboard() {
     <div className="min-h-screen flex flex-col">
       {/* ---------- TOP BAR ---------- */}
       <header className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#252526]/80 backdrop-blur">
+        <NavDrawer current="home" />
         <div className="flex items-center gap-2 mr-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0098ff] to-[#0050a0] grid place-items-center font-black text-white">
             L
@@ -1036,12 +1038,6 @@ export default function Dashboard() {
           >
             ↺ รีเซ็ต
           </button>
-          <a
-            href="/logic"
-            className="text-xs px-3 py-1.5 rounded-md bg-sky-500/15 border border-sky-400/40 text-sky-200 hover:bg-sky-500/25 font-semibold"
-          >
-            📋 Logic & ขีดจำกัด
-          </a>
         </div>
       </header>
 
@@ -1600,7 +1596,6 @@ export default function Dashboard() {
         </span>
         <span className="ml-auto opacity-90 whitespace-nowrap">เกณฑ์อ่าน ≥ {readPct}%</span>
         <span className="opacity-90 whitespace-nowrap">{view === "side" ? "Side View" : "Top View"}</span>
-        <a href="/logic" className="opacity-90 hover:opacity-100 underline-offset-2 hover:underline whitespace-nowrap">Logic</a>
       </footer>
     </div>
   );

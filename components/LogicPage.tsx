@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import NavDrawer from "@/components/NavDrawer";
 import {
   LIDAR_MODELS,
   DETECTION,
@@ -74,7 +75,7 @@ export default function LogicPage() {
   return (
     <div className="min-h-screen text-slate-200">
       <header className="flex items-center gap-3 px-5 py-3 border-b border-white/10 bg-[#252526]/80 backdrop-blur sticky top-0 z-10">
-        <a href="/" className="text-xs px-3 py-1.5 rounded-md bg-[#2d2d30] border border-white/10 text-slate-200 hover:bg-[#37373d]">← กลับแดชบอร์ด</a>
+        <NavDrawer current="logic" />
         <div className="font-bold text-sm text-white">Logic การตรวจจับ & ขีดจำกัดเครื่องมือ LiDAR</div>
       </header>
 
